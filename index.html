@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mermaid Flowchart Viewer</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap");
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Poppins", sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+        animation: gradientShift 15s ease infinite;
+        position: relative;
+        overflow-x: hidden;
+      }
+
+      @keyframes gradientShift {
+        0%,
+        100% {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        33% {
+          background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        66% {
+          background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="20" cy="20" r="1" fill="white" opacity="0.1"/><circle cx="80" cy="80" r="1" fill="white" opacity="0.1"/><circle cx="40" cy="60" r="1" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+        pointer-events: none;
+        z-index: 1;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        position: relative;
+        z-index: 2;
+      }
+
+      h1 {
+        text-align: center;
+        color: white;
+        font-weight: 700;
+        font-size: 3rem;
+        margin-bottom: 10px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        animation: titlePulse 4s ease-in-out infinite;
+        background: linear-gradient(45deg, #fff, #f0f0f0, #fff);
+        background-size: 200% 200%;
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: titleShine 3s linear infinite,
+          titleFloat 6s ease-in-out infinite;
+      }
+
+      @keyframes titleShine {
+        0% {
+          background-position: -200% center;
+        }
+        100% {
+          background-position: 200% center;
+        }
+      }
+
+      @keyframes titleFloat {
+        0%,
+        100% {
+          transform: translateY(0px);
+        }
+        50% {
+          transform: translateY(-10px);
+        }
+      }
+
+      .subtitle {
+        text-align: center;
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 1.2rem;
+        margin-bottom: 30px;
+        animation: fadeInUp 1s ease 0.5s both;
+      }
+
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .input-section {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        margin-bottom: 30px;
+        animation: slideInLeft 1s ease 0.2s both;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      @keyframes slideInLeft {
+        from {
+          opacity: 0;
+          transform: translateX(-50px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      label {
+        display: block;
+        margin-bottom: 10px;
+        font-weight: 600;
+        color: #333;
+        font-size: 1.1rem;
+      }
+
+      textarea {
+        width: 100%;
+        height: 200px;
+        font-family: "Fira Code", monospace;
+        font-size: 14px;
+        border-radius: 15px;
+        padding: 20px;
+        border: 2px solid #e1e5e9;
+        background: #f8f9fa;
+        resize: vertical;
+        transition: all 0.3s ease;
+        line-height: 1.5;
+      }
+
+      textarea:focus {
+        outline: none;
+        border-color: #667eea;
+        background: white;
+        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        transform: scale(1.01);
+      }
+
+      #render-btn {
+        display: block;
+        margin: 25px auto;
+        padding: 15px 40px;
+        border: none;
+        background: linear-gradient(45deg, #667eea, #764ba2);
+        color: white;
+        border-radius: 50px;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: 600;
+        font-family: "Poppins", sans-serif;
+        transition: all 0.3s ease;
+        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        position: relative;
+        overflow: hidden;
+        min-width: 200px;
+      }
+
+      #render-btn::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.2),
+          transparent
+        );
+        transition: left 0.6s ease;
+      }
+
+      #render-btn:hover::before {
+        left: 100%;
+      }
+
+      #render-btn:hover {
+        background: linear-gradient(45deg, #764ba2, #667eea);
+        transform: translateY(-3px);
+        box-shadow: 0 15px 35px rgba(102, 126, 234, 0.4);
+      }
+
+      #render-btn:active {
+        transform: translateY(-1px);
+      }
+
+      #render-btn.loading {
+        pointer-events: none;
+        background: #ccc;
+      }
+
+      #render-btn.loading::after {
+        content: "";
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        border: 2px solid white;
+        border-top: 2px solid transparent;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        top: 50%;
+        left: 50%;
+        margin: -10px 0 0 -10px;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .diagram-container {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        overflow-x: auto;
+        animation: slideInRight 1s ease 0.4s both;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        min-height: 200px;
+        position: relative;
+      }
+
+      @keyframes slideInRight {
+        from {
+          opacity: 0;
+          transform: translateX(50px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      .diagram-container::before {
+        content: "Your beautiful flowchart will appear here! ✨";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: #666;
+        font-style: italic;
+        opacity: 0.7;
+        pointer-events: none;
+      }
+
+      .diagram-container.has-content::before {
+        display: none;
+      }
+
+      #diagram {
+        animation: diagramAppear 0.8s ease both;
+      }
+
+      @keyframes diagramAppear {
+        from {
+          opacity: 0;
+          transform: scale(0.8);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      .floating-elements {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      .floating-elements::before,
+      .floating-elements::after {
+        content: "";
+        position: absolute;
+        width: 300px;
+        height: 300px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+        animation: float 20s infinite linear;
+      }
+
+      .floating-elements::before {
+        top: 10%;
+        left: -100px;
+        animation-delay: 0s;
+      }
+
+      .floating-elements::after {
+        bottom: 10%;
+        right: -100px;
+        animation-delay: 10s;
+      }
+
+      @keyframes float {
+        0% {
+          transform: translateX(0) rotate(0deg);
+        }
+        100% {
+          transform: translateX(100vw) rotate(360deg);
+        }
+      }
+
+      /* Responsive design */
+      @media (max-width: 768px) {
+        body {
+          padding: 10px;
+        }
+
+        h1 {
+          font-size: 2rem;
+        }
+
+        .input-section,
+        .diagram-container {
+          padding: 20px;
+          margin-bottom: 20px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="floating-elements"></div>
+
+    <div class="container">
+      <h1>🪄 Flowchart Converter</h1>
+      <p class="subtitle">
+        by Shivam Yadav • Transform code into beautiful diagrams
+      </p>
+
+      <div class="input-section">
+        <label for="mermaid-input">✨ Paste your Mermaid code below:</label>
+        <textarea
+          id="mermaid-input"
+          placeholder="flowchart TD&#10;A[Start] --> B[Process]&#10;B --> C{Condition?}&#10;C -->|Yes| D[Do this]&#10;C -->|No| E[Do that]&#10;D --> F[End]&#10;E --> F"
+        >
+flowchart TD
+A[Start] --> B[Process]
+B --> C{Condition?}
+C -->|Yes| D[Do this]
+C -->|No| E[Do that]
+D --> F[End]
+E --> F</textarea
+        >
+      </div>
+
+      <button id="render-btn">
+        <span class="btn-text">🚀 Generate Flowchart</span>
+      </button>
+
+      <div class="diagram-container" id="diagram-container">
+        <div class="mermaid" id="diagram"></div>
+      </div>
+    </div>
+
+    <script>
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: "default",
+        securityLevel: "loose",
+        flowchart: {
+          useMaxWidth: true,
+          htmlLabels: true,
+          curve: "basis",
+        },
+      });
+
+      const input = document.getElementById("mermaid-input");
+      const diagramDiv = document.getElementById("diagram");
+      const diagramContainer = document.getElementById("diagram-container");
+      const button = document.getElementById("render-btn");
+      const btnText = button.querySelector(".btn-text");
+
+      // Auto-resize textarea
+      input.addEventListener("input", function () {
+        this.style.height = "auto";
+        this.style.height = Math.min(this.scrollHeight, 400) + "px";
+      });
+
+      // Enhanced button click with animations
+      button.addEventListener("click", async () => {
+        const code = input.value.trim();
+        if (!code) {
+          // Shake animation for empty input
+          input.style.animation = "shake 0.5s ease-in-out";
+          setTimeout(() => (input.style.animation = ""), 500);
+          return;
+        }
+
+        // Button loading state
+        button.classList.add("loading");
+        btnText.textContent = "Generating...";
+
+        // Clear previous diagram with fade out
+        if (diagramDiv.innerHTML) {
+          diagramDiv.style.animation = "fadeOut 0.3s ease";
+          await new Promise((resolve) => setTimeout(resolve, 300));
+        }
+
+        try {
+          // Clear and set new content
+          diagramDiv.innerHTML = "";
+          diagramContainer.classList.add("has-content");
+
+          // Create a unique ID for this diagram
+          const diagramId = "diagram-" + Date.now();
+
+          // Try the newer mermaid.render API first
+          try {
+            const { svg } = await mermaid.render(diagramId, code);
+            diagramDiv.innerHTML = svg;
+          } catch (renderError) {
+            // Fallback to older API
+            diagramDiv.innerHTML = code;
+            diagramDiv.className = "mermaid";
+            await mermaid.init(undefined, diagramDiv);
+          }
+
+          // Fade in new diagram
+          diagramDiv.style.animation = "diagramAppear 0.8s ease both";
+
+          // Success feedback
+          btnText.textContent = "✨ Generated!";
+          button.style.background = "linear-gradient(45deg, #28a745, #20c997)";
+
+          setTimeout(() => {
+            btnText.textContent = "🚀 Generate Flowchart";
+            button.style.background = "";
+          }, 2000);
+        } catch (error) {
+          // Error handling with visual feedback
+          diagramDiv.innerHTML = `
+            <div style="text-align: center; color: #dc3545; padding: 40px;">
+              <h3>⚠️ Oops! Something went wrong</h3>
+              <p>Please check your Mermaid syntax and try again.</p>
+              <small style="background: #f8f9fa; padding: 10px; border-radius: 5px; font-family: monospace;">
+                ${error.message || "Invalid syntax"}
+              </small>
+            </div>
+          `;
+
+          btnText.textContent = "❌ Error";
+          button.style.background = "linear-gradient(45deg, #dc3545, #e74c3c)";
+
+          setTimeout(() => {
+            btnText.textContent = "🚀 Generate Flowchart";
+            button.style.background = "";
+          }, 3000);
+        } finally {
+          button.classList.remove("loading");
+        }
+      });
+
+      // Keyboard shortcut (Ctrl+Enter)
+      input.addEventListener("keydown", (e) => {
+        if (e.ctrlKey && e.key === "Enter") {
+          button.click();
+        }
+      });
+
+      // Add shake animation for empty input
+      const style = document.createElement("style");
+      style.textContent = `
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-10px); }
+          75% { transform: translateX(10px); }
+        }
+        @keyframes fadeOut {
+          from { opacity: 1; transform: scale(1); }
+          to { opacity: 0; transform: scale(0.95); }
+        }
+      `;
+      document.head.appendChild(style);
+
+      // Auto-generate on page load
+      setTimeout(() => {
+        button.click();
+      }, 1500);
+
+      // Add sparkle effect on hover
+      button.addEventListener("mouseenter", () => {
+        if (!button.classList.contains("loading")) {
+          createSparkles(button);
+        }
+      });
+
+      function createSparkles(element) {
+        for (let i = 0; i < 6; i++) {
+          setTimeout(() => {
+            const sparkle = document.createElement("div");
+            sparkle.style.cssText = `
+              position: absolute;
+              width: 4px;
+              height: 4px;
+              background: white;
+              border-radius: 50%;
+              pointer-events: none;
+              animation: sparkle 1s ease-out forwards;
+              left: ${Math.random() * element.offsetWidth}px;
+              top: ${Math.random() * element.offsetHeight}px;
+            `;
+
+            const sparkleStyle = document.createElement("style");
+            sparkleStyle.textContent = `
+              @keyframes sparkle {
+                0% { transform: scale(0) rotate(0deg); opacity: 1; }
+                100% { transform: scale(1) rotate(180deg); opacity: 0; }
+              }
+            `;
+            document.head.appendChild(sparkleStyle);
+
+            element.appendChild(sparkle);
+            setTimeout(() => sparkle.remove(), 1000);
+          }, i * 100);
+        }
+      }
+    </script>
+  </body>
+</html>
